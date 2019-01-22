@@ -28,10 +28,13 @@ export class FingerboardComponent implements OnInit, OnChanges {
 
   private $dots: D3Selection;
 
+  private $fretMarks: D3Selection;
+
   constructor(private host: ElementRef) { }
 
   ngOnInit() {
     this.$svg = d3.select(this.svgElement.nativeElement);
+    this.renderFretMarks();
     this.renderFrets();
     this.renderStrings();
     this.dots.forEach(this.renderDot.bind(this));
@@ -44,6 +47,9 @@ export class FingerboardComponent implements OnInit, OnChanges {
         this.$dots = undefined;
       }
       this.dots.forEach(this.renderDot.bind(this));
+    }
+    if (changes.fretMark && !changes.fretMark.firstChange) {
+      this.toggleFretMarks();
     }
   }
 
@@ -71,6 +77,34 @@ export class FingerboardComponent implements OnInit, OnChanges {
         .attr('dominant-baseline', 'central')
         .attr('fill', dot.textColor || 'white');
     }
+  }
+
+  private renderFretMarks() {
+    this.$fretMarks = this.$svg.append('g').attr('class', 'fret-marks');
+
+    [3, 5, 7, 9, 15, 17, 19, 21].forEach(fret => {
+      const x = (fret + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%';
+      this.$fretMarks.append('circle')
+        .attr('class', `fret-mark fret-mark-${fret}`)
+        .attr('cx', x)
+        .attr('cy', '50%')
+        .attr('r', 10);
+    });
+    this.$fretMarks.append('circle')
+      .attr('class', `fret-mark fret-mark-12 fret-mark-12-1`)
+      .attr('cx', (12 + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%')
+      .attr('cy', '25%')
+      .attr('r', 10);
+    this.$fretMarks.append('circle')
+      .attr('class', `fret-mark fret-mark-12 fret-mark-12-2`)
+      .attr('cx', (12 + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%')
+      .attr('cy', '75%')
+      .attr('r', 10);
+    this.toggleFretMarks();
+  }
+
+  private toggleFretMarks() {
+    this.$fretMarks.style('display', this.fretMark ? 'inherit' : 'none');
   }
 
   private renderFrets() {

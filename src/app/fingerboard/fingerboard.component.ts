@@ -1,5 +1,6 @@
-import { Component, OnInit, ChangeDetectionStrategy, Input, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, Input, ViewChild, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
+import { PositionDot, validateDot } from './position-dot';
 
 export type D3Selection = d3.Selection<d3.BaseType, any, d3.BaseType, any>;
 
@@ -12,18 +13,20 @@ const NUMBER_OF_FRETS = 21;
   styleUrls: ['./fingerboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FingerboardComponent implements OnInit {
+export class FingerboardComponent implements OnInit, OnChanges {
 
   @Input()
   fretMark = true;
 
   @Input()
-  fretNumber = true;
+  dots: PositionDot[] = [];
 
   @ViewChild('svg')
   private svgElement: ElementRef;
 
   private $svg: D3Selection;
+
+  private $dots: D3Selection;
 
   constructor(private host: ElementRef) { }
 
@@ -31,13 +34,50 @@ export class FingerboardComponent implements OnInit {
     this.$svg = d3.select(this.svgElement.nativeElement);
     this.renderFrets();
     this.renderStrings();
+    this.dots.forEach(this.renderDot.bind(this));
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes.dots && !changes.dots.firstChange) {
+      if (this.$dots) {
+        this.$dots.remove();
+        this.$dots = undefined;
+      }
+      this.dots.forEach(this.renderDot.bind(this));
+    }
+  }
+
+  private renderDot(dot: PositionDot) {
+    if (!this.$dots) {
+      this.$dots = this.$svg.append('g').attr('class', 'dots');
+    }
+    validateDot(dot);
+    const x = (dot.fret + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%';
+    const y = 100 * (dot.string - 1) / (NUMBER_OF_STRINGS - 1) + '%';
+    this.$dots.append('circle')
+      .attr('class', `dot dot-${dot.string}s dot-text-${dot.fret}f`)
+      .attr('cx', x)
+      .attr('cy', y)
+      .attr('r', 10)
+      .attr('fill', dot.color)
+      .style('opacity', dot.opacity);
+    if (dot.text) {
+      this.$dots.append('text')
+        .attr('class', `dot-text dot-text-${dot.string}s dot-text-${dot.fret}f`)
+        .text(dot.text)
+        .attr('x', x)
+        .attr('y', y)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+        .attr('fill', dot.textColor || 'white');
+    }
   }
 
   private renderFrets() {
     const $frets = this.$svg.append('g').attr('class', 'frets');
 
     Array(NUMBER_OF_FRETS + 1).fill(0).forEach((_, i) => {
-      const x = (100 - 1) * (i + 1) / (NUMBER_OF_FRETS + 1) + '%';
+      const x = 99 * (i + 1) / (NUMBER_OF_FRETS + 1) + '%';
       const isNut = i === 0;
       const $fret = $frets.append('line')
         .attr('class', `fret fret-${i}`)

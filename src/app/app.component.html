@@ -1,2 +1,28 @@
-<gsp-fingerboard></gsp-fingerboard>
-<!--<router-outlet></router-outlet>-->
+<gsp-fingerboard [dots]="dots" [fretMark]="fretMark"></gsp-fingerboard>
+<table>
+  <tr>
+    <th>Root</th>
+    <td>
+      <select name="root" (change)="onRootChange($event)">
+        <option *ngFor="let r of allSounds" [value]="r" [selected]="r === root">{{soundName(r)}}</option>
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <th>Type</th>
+    <td>
+      <select name="scale-type" (change)="onScaleTypeChange($event)">
+        <option *ngFor="let st of allScaleTypes" [value]="st" [selected]="st === scaleType">{{scaleName(st)}}</option>
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <th>Fret Mark</th>
+    <td><button (click)="toggleMark()">{{fretMark ? 'Hide' : 'Show'}}</button></td>
+  </tr>
+</table>
+<p>
+
+</p>
+<p>
+</p>

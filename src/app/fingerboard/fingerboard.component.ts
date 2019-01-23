@@ -61,7 +61,7 @@ export class FingerboardComponent implements OnInit, OnChanges {
     const x = (dot.fret + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%';
     const y = 100 * (dot.string - 1) / (NUMBER_OF_STRINGS - 1) + '%';
     this.$dots.append('circle')
-      .attr('class', `dot dot-${dot.string}s dot-text-${dot.fret}f`)
+      .attr('class', `dot dot-${dot.string}s dot-${dot.fret}f`)
       .attr('cx', x)
       .attr('cy', y)
       .attr('r', 10)

@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, Input, ViewChild, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
 import { PositionDot, validateDot } from './position-dot';
-import { Sound, soundName } from '../../core/sound';
+import { Note, noteName } from '../../core/note';
 
 export type D3Selection = d3.Selection<d3.BaseType, any, d3.BaseType, any>;
 
@@ -38,7 +38,7 @@ export class FingerboardComponent implements OnInit, OnChanges {
   dots: PositionDot[] = [];
 
   @Input()
-  strings: Sound[] = [];
+  strings: Note[] = [];
 
   get numberOfStrings() {
     return this.strings.length;
@@ -112,7 +112,7 @@ export class FingerboardComponent implements OnInit, OnChanges {
       const y = 100 * i / (this.numberOfStrings - 1) + '%';
       this.$stringNames.append('text')
         .attr('class', `string-name string-name-${i + 1}`)
-        .text(soundName(string))
+        .text(noteName(string))
         .attr('x', 0)
         .attr('y', y)
         .attr('dominant-baseline', 'central');

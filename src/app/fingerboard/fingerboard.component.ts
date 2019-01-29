@@ -2,20 +2,9 @@ import { Component, OnInit, ChangeDetectionStrategy, Input, ViewChild, ElementRe
 import * as d3 from 'd3';
 import { PositionDot, validateDot } from './position-dot';
 import { Note, noteName } from '../../core/note';
+import { arithmeticSequence } from '../../core/until';
 
 export type D3Selection = d3.Selection<d3.BaseType, any, d3.BaseType, any>;
-
-const arithmeticSequence = (initial: number, interval: number, limit: number): number[] => {
-  const sequence = [];
-  for (let i = 0; true; i++) {
-    const next = interval * i + initial;
-    if (next > limit) {
-      break;
-    }
-    sequence.push(next);
-  }
-  return sequence;
-};
 
 @Component({
   selector: 'gsp-fingerboard',
@@ -136,13 +125,13 @@ export class FingerboardComponent implements OnInit, OnChanges {
 
   private renderDot(dot: PositionDot) {
     validateDot(dot);
-    if (dot.string > this.numberOfStrings || dot.fret > this.numberOfFrets) {
+    if (dot.string + 1 > this.numberOfStrings || dot.fret > this.numberOfFrets) {
       return;
     }
     const x = (dot.fret + 0.5) * 99 / (this.numberOfFrets + 1) + '%';
-    const y = 100 * (dot.string - 1) / (this.numberOfStrings - 1) + '%';
+    const y = 100 * dot.string / (this.numberOfStrings - 1) + '%';
     this.$dots.append('circle')
-      .attr('class', `dot dot-${dot.string}s dot-${dot.fret}f`)
+      .attr('class', `dot dot-${dot.string + 1}s dot-${dot.fret}f`)
       .attr('cx', x)
       .attr('cy', y)
       .attr('r', 10)
@@ -150,7 +139,7 @@ export class FingerboardComponent implements OnInit, OnChanges {
       .style('opacity', dot.opacity);
     if (dot.text) {
       this.$dots.append('text')
-        .attr('class', `dot-text dot-text-${dot.string}s dot-text-${dot.fret}f`)
+        .attr('class', `dot-text dot-text-${dot.string + 1}s dot-text-${dot.fret}f`)
         .text(dot.text)
         .attr('x', x)
         .attr('y', y)

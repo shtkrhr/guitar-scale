@@ -1,28 +1,54 @@
-<gsp-fingerboard [dots]="dots" [fretMark]="fretMark"></gsp-fingerboard>
-<table>
-  <tr>
-    <th>Root</th>
-    <td>
-      <select name="root" (change)="onRootChange($event)">
-        <option *ngFor="let r of allSounds" [value]="r" [selected]="r === root">{{soundName(r)}}</option>
-      </select>
-    </td>
-  </tr>
-  <tr>
-    <th>Type</th>
-    <td>
-      <select name="scale-type" (change)="onScaleTypeChange($event)">
-        <option *ngFor="let st of allScaleTypes" [value]="st" [selected]="st === scaleType">{{scaleName(st)}}</option>
-      </select>
-    </td>
-  </tr>
-  <tr>
-    <th>Fret Mark</th>
-    <td><button (click)="toggleMark()">{{fretMark ? 'Hide' : 'Show'}}</button></td>
-  </tr>
-</table>
-<p>
+<div class="settings">
 
-</p>
-<p>
-</p>
+  <div class="scale-settings">
+    <mat-form-field>
+      <mat-select placeholder="Tuning Type" [(ngModel)]="tuningType" (ngModelChange)="onTuningTypeChange()">
+        <mat-option *ngFor="let tt of allTuningTypes" [value]="tt">{{tt}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="root">
+      <mat-select placeholder="Root" [(ngModel)]="root" (ngModelChange)="onRootChange()">
+        <mat-option *ngFor="let n of allNotes" [value]="n">{{noteName(n)}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-select placeholder="Scale Type" [(ngModel)]="scaleType" (ngModelChange)="onScaleTypeChange()">
+        <mat-option *ngFor="let st of allScaleTypes" [value]="st">{{st}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="detail-settings">
+    <div class="detail-setting-field">
+      <span class="detail-setting-field__name">Fret Mark</span>
+      <span class="detail-setting-field__content">
+      <mat-slide-toggle [(ngModel)]="fretMark"></mat-slide-toggle>
+    </span>
+    </div>
+
+    <div class="detail-setting-field">
+      <span class="detail-setting-field__name">String Name</span>
+      <span class="detail-setting-field__content">
+      <mat-slide-toggle [(ngModel)]="stringName"></mat-slide-toggle>
+    </span>
+    </div>
+
+    <div class="detail-setting-field">
+      <span class="detail-setting-field__name">Frets</span>
+      <span class="detail-setting-field__content">
+      <mat-slider [max]="24" [min]="12" [thumbLabel]="true" [(ngModel)]="numberOfFrets" (ngModelChange)="onNumberOfFretsChange()"></mat-slider>
+    </span>
+    </div>
+  </div>
+</div>
+
+
+<gsp-fingerboard
+  [dots]="dots"
+  [strings]="strings"
+  [fretMark]="fretMark"
+  [numberOfFrets]="numberOfFrets"
+  [stringName]="stringName">
+</gsp-fingerboard>

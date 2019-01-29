@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { PositionDot } from './fingerboard/position-dot';
-import { scaleByType } from '../core/scale-list';
-import { allScaleTypes, ScaleType } from '../core/scale-type';
-import { allSounds, Sound } from '../core/sound';
+import { allScaleTypes, scaleByType, ScaleType } from '../core/scale-type';
+import { allNotes, Note, noteName } from '../core/note';
+import { allTuningTypes, stringsForTuning, TuningType } from '../core/tuning-type';
+import { arithmeticSequence } from '../core/until';
 
 @Component({
   selector: 'gsp-root',
@@ -12,75 +13,78 @@ import { allSounds, Sound } from '../core/sound';
 })
 export class AppComponent implements OnInit {
 
-  fretMark = true;
-
-  root = Sound.C;
+  root = Note.C;
 
   scaleType = ScaleType.Major;
 
-  dots: PositionDot[] = this.getDots();
+  tuningType = TuningType.GuitarRegular;
 
-  allSounds = allSounds();
+  fretMark = true;
+
+  numberOfFrets = 21;
+
+  stringName = true;
+
+  strings: Note[] = [];
+
+  dots: PositionDot[] = [];
+
+  allNotes = allNotes();
 
   allScaleTypes = allScaleTypes();
 
+  allTuningTypes = allTuningTypes();
+
   constructor(private changeDetector: ChangeDetectorRef) {
+    this.updateStrings();
+    this.updatePositionDots();
   }
 
   ngOnInit() {
   }
 
-  soundName(sound: Sound) {
-    return Sound[sound];
+  noteName(note: Note) {
+    return noteName(note);
   }
 
-  scaleName(scale: ScaleType) {
-    return ScaleType[scale];
+  onRootChange() {
+    this.updatePositionDots();
   }
 
-  private getDots() {
+  onScaleTypeChange() {
+    this.updatePositionDots();
+  }
+
+  onTuningTypeChange() {
+    this.updateStrings();
+    this.updatePositionDots();
+  }
+
+  onNumberOfFretsChange() {
+    this.updatePositionDots();
+  }
+
+  private updateStrings() {
+    this.strings = stringsForTuning(this.tuningType);
+  }
+
+  private updatePositionDots() {
     const scale = scaleByType(this.scaleType);
-    const strings = [Sound.E, Sound.B, Sound.G, Sound.D, Sound.A, Sound.E];
-    return scale.reduce((carry, scaleIndex) => {
-      const dots: PositionDot[] = strings.reduce((_carry, stringSound, string) => {
-        const frets = this.fretsFor((this.root + scaleIndex) % 12, stringSound);
-        const _dots = frets.map(fret => {
-          return {fret, string: string + 1, color: scaleIndex === 0 ? 'red' : undefined};
-        });
-        return _carry.concat(_dots);
+    this.dots = scale.reduce((dots, scaleIndex) => {
+      const note = (this.root + scaleIndex) % 12;
+      const dotsForNote = this.strings.reduce((_carry, stringNote, stringIndex) => {
+        return _carry.concat(
+          this.fretsFor(note, stringNote, this.numberOfFrets)
+            .map(fret => ({fret, string: stringIndex, color: scaleIndex === 0 ? '#ff4081' : '#212121'}))
+        );
       }, []);
-      return carry.concat(dots);
+      return dots.concat(dotsForNote);
     }, []);
   }
 
-  private fretsFor(sound: Sound, onStringSound: Sound, maxFret: number = 21) {
-    const minFret = (sound - onStringSound + 12) % 12;
-    const frets = [minFret];
-    while (true) {
-      const prev = frets[frets.length - 1];
-      if (prev + 12 > maxFret) {
-        break;
-      }
-      frets.push(prev + 12);
-    }
+  private fretsFor(note: Note, onStringNote: Note, maxFret: number = 21) {
+    const minFret = (note - onStringNote + 12) % 12;
 
-    return frets;
-  }
-
-  toggleMark() {
-    this.fretMark = !this.fretMark;
-    this.changeDetector.markForCheck();
-  }
-
-  onRootChange(e: Event) {
-    this.root = Sound[Sound[(e.target as any).value]];
-    this.dots = this.getDots();
-    this.changeDetector.markForCheck();
-  }
-
-  onScaleTypeChange(e: Event) {
-    this.scaleType = ScaleType[ScaleType[(e.target as any).value]];
-    this.dots = this.getDots();
-    this.changeDetector.markForCheck();
+    return arithmeticSequence(minFret, 12, maxFret);
   }
 }

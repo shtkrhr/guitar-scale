@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  padding: 20px 30px;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.settings {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 15px;
+}
+
+.detail-settings {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.detail-setting-field {
+  display: flex;
+  align-items: center;
+
+  &:not(:last-child) {
+    padding-right: 1em;
+  }
+
+  &__name {
+    padding-right: .3em;
+  }
+}
+
+gsp-fingerboard {
+  height: 180px;
+  padding-bottom: 40px;
+}
+
+.scale-settings {
+  display: flex;
+
+  mat-form-field {
+    &:not(:first-child) {
+      padding-left: 1em;
+    }
+
+    &.root {
+      width: 100px;
+    }
+  }
+}

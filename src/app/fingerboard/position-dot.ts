@@ -8,7 +8,7 @@ export interface PositionDot {
 }
 
 export const validateDot = (dot: PositionDot) => {
-  if (dot.string < 1 ||
+  if (dot.string < 0 ||
     dot.fret < 0 ||
     dot.string !== parseInt(dot.string + '', 10) ||
     dot.fret !== parseInt(dot.fret + '', 10)) {

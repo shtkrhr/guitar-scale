@@ -1,11 +1,21 @@
 import { Component, OnInit, ChangeDetectionStrategy, Input, ViewChild, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
 import { PositionDot, validateDot } from './position-dot';
+import { Sound, soundName } from '../../core/sound';
 
 export type D3Selection = d3.Selection<d3.BaseType, any, d3.BaseType, any>;
 
-const NUMBER_OF_STRINGS = 6;
-const NUMBER_OF_FRETS = 21;
+const arithmeticSequence = (initial: number, interval: number, limit: number): number[] => {
+  const sequence = [];
+  for (let i = 0; true; i++) {
+    const next = interval * i + initial;
+    if (next > limit) {
+      break;
+    }
+    sequence.push(next);
+  }
+  return sequence;
+};
 
 @Component({
   selector: 'gsp-fingerboard',
@@ -19,7 +29,20 @@ export class FingerboardComponent implements OnInit, OnChanges {
   fretMark = true;
 
   @Input()
+  stringName = true;
+
+  @Input()
+  numberOfFrets = 21;
+
+  @Input()
   dots: PositionDot[] = [];
+
+  @Input()
+  strings: Sound[] = [];
+
+  get numberOfStrings() {
+    return this.strings.length;
+  }
 
   @ViewChild('svg')
   private svgElement: ElementRef;
@@ -28,38 +51,96 @@ export class FingerboardComponent implements OnInit, OnChanges {
 
   private $dots: D3Selection;
 
+  private $frets: D3Selection;
+
+  private $strings: D3Selection;
+
   private $fretMarks: D3Selection;
 
-  constructor(private host: ElementRef) { }
+  private $stringNames: D3Selection;
 
   ngOnInit() {
     this.$svg = d3.select(this.svgElement.nativeElement);
     this.renderFretMarks();
     this.renderFrets();
     this.renderStrings();
-    this.dots.forEach(this.renderDot.bind(this));
+    this.renderStringNames();
+    this.renderDots();
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes.dots && !changes.dots.firstChange) {
-      if (this.$dots) {
-        this.$dots.remove();
-        this.$dots = undefined;
-      }
-      this.dots.forEach(this.renderDot.bind(this));
+    const numberOfFretsChanged = changes.numberOfFrets && !changes.numberOfFrets.firstChange;
+    const stringsChanged = changes.strings && !changes.strings.firstChange;
+    const dotsChanged = changes.dots && !changes.dots.firstChange;
+    const fretMarkChagned = changes.fretMark && !changes.fretMark.firstChange;
+    const stringNameChanged = changes.stringName && !changes.stringName.firstChange;
+
+    if (numberOfFretsChanged) {
+      this.renderFretMarks();
+      this.renderFrets();
     }
-    if (changes.fretMark && !changes.fretMark.firstChange) {
+
+    if (stringsChanged || numberOfFretsChanged) {
+      this.renderStrings();
+    }
+
+    if (stringsChanged) {
+      this.renderStringNames();
+    }
+
+    if (numberOfFretsChanged || dotsChanged || stringsChanged) {
+      this.renderDots();
+    }
+
+    if (fretMarkChagned) {
       this.toggleFretMarks();
+    }
+
+    if (stringNameChanged) {
+      this.toggleStringNames();
     }
   }
 
-  private renderDot(dot: PositionDot) {
-    if (!this.$dots) {
+  private renderStringNames() {
+    if (this.$stringNames) {
+      this.$stringNames.selectAll('*').remove();
+    } else {
+      this.$stringNames = this.$svg.append('g').attr('class', 'string-names');
+    }
+
+    this.strings.forEach((string, i) => {
+      const y = 100 * i / (this.numberOfStrings - 1) + '%';
+      this.$stringNames.append('text')
+        .attr('class', `string-name string-name-${i + 1}`)
+        .text(soundName(string))
+        .attr('x', 0)
+        .attr('y', y)
+        .attr('dominant-baseline', 'central');
+    });
+
+    this.toggleStringNames();
+  }
+
+  private toggleStringNames() {
+    this.$stringNames.style('display', this.stringName ? 'inherit' : 'none');
+  }
+
+  private renderDots() {
+    if (this.$dots) {
+      this.$dots.selectAll('*').remove();
+    } else {
       this.$dots = this.$svg.append('g').attr('class', 'dots');
     }
+    this.dots.forEach(this.renderDot.bind(this));
+  }
+
+  private renderDot(dot: PositionDot) {
     validateDot(dot);
-    const x = (dot.fret + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%';
-    const y = 100 * (dot.string - 1) / (NUMBER_OF_STRINGS - 1) + '%';
+    if (dot.string > this.numberOfStrings || dot.fret > this.numberOfFrets) {
+      return;
+    }
+    const x = (dot.fret + 0.5) * 99 / (this.numberOfFrets + 1) + '%';
+    const y = 100 * (dot.string - 1) / (this.numberOfStrings - 1) + '%';
     this.$dots.append('circle')
       .attr('class', `dot dot-${dot.string}s dot-${dot.fret}f`)
       .attr('cx', x)
@@ -80,26 +161,36 @@ export class FingerboardComponent implements OnInit, OnChanges {
   }
 
   private renderFretMarks() {
-    this.$fretMarks = this.$svg.append('g').attr('class', 'fret-marks');
+    if (this.$fretMarks) {
+      this.$fretMarks.selectAll('*').remove();
+    } else {
+      this.$fretMarks = this.$svg.append('g').attr('class', 'fret-marks');
+    }
 
-    [3, 5, 7, 9, 15, 17, 19, 21].forEach(fret => {
-      const x = (fret + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%';
-      this.$fretMarks.append('circle')
-        .attr('class', `fret-mark fret-mark-${fret}`)
-        .attr('cx', x)
-        .attr('cy', '50%')
-        .attr('r', 10);
+    const fretsToMark = [3, 5, 7, 9, 12].reduce((carry, v) => {
+      return carry.concat(arithmeticSequence(v, 12, this.numberOfFrets));
+    }, []);
+
+    fretsToMark.forEach(fret => {
+      const isDouble = fret % 12 === 0;
+      const x = (fret + 0.5) * 99 / (this.numberOfFrets + 1) + '%';
+      if (isDouble) {
+        this.$fretMarks.append('circle')
+          .attr('class', `fret-mark fret-mark-double fret-mark-${fret} fret-mark-${fret}-1`)
+          .attr('cx', x).attr('r', 10)
+          .attr('cy', '25%');
+        this.$fretMarks.append('circle')
+          .attr('class', `fret-mark fret-mark-double fret-mark-${fret} fret-mark-${fret}-2`)
+          .attr('cx', x).attr('r', 10)
+          .attr('cy', '75%');
+      } else {
+        this.$fretMarks.append('circle')
+          .attr('class', `fret-mark fret-mark-single fret-mark-${fret}`)
+          .attr('cx', x).attr('r', 10)
+          .attr('cy', '50%');
+      }
     });
-    this.$fretMarks.append('circle')
-      .attr('class', `fret-mark fret-mark-12 fret-mark-12-1`)
-      .attr('cx', (12 + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%')
-      .attr('cy', '25%')
-      .attr('r', 10);
-    this.$fretMarks.append('circle')
-      .attr('class', `fret-mark fret-mark-12 fret-mark-12-2`)
-      .attr('cx', (12 + 0.5) * 99 / (NUMBER_OF_FRETS + 1) + '%')
-      .attr('cy', '75%')
-      .attr('r', 10);
+
     this.toggleFretMarks();
   }
 
@@ -108,12 +199,16 @@ export class FingerboardComponent implements OnInit, OnChanges {
   }
 
   private renderFrets() {
-    const $frets = this.$svg.append('g').attr('class', 'frets');
+    if (this.$frets) {
+      this.$frets.selectAll('*').remove();
+    } else {
+      this.$frets = this.$svg.append('g').attr('class', 'frets');
+    }
 
-    Array(NUMBER_OF_FRETS + 1).fill(0).forEach((_, i) => {
-      const x = 99 * (i + 1) / (NUMBER_OF_FRETS + 1) + '%';
+    Array(this.numberOfFrets + 1).fill(0).forEach((_, i) => {
+      const x = 99 * (i + 1) / (this.numberOfFrets + 1) + '%';
       const isNut = i === 0;
-      const $fret = $frets.append('line')
+      const $fret = this.$frets.append('line')
         .attr('class', `fret fret-${i}`)
         .attr('stroke-width', isNut ? 6 : 2)
         .attr('stroke', 'black')
@@ -130,12 +225,16 @@ export class FingerboardComponent implements OnInit, OnChanges {
   }
 
   private renderStrings() {
-    const $strings = this.$svg.append('g').attr('class', 'strings');
+    if (this.$strings) {
+      this.$strings.selectAll('*').remove();
+    } else {
+      this.$strings = this.$svg.append('g').attr('class', 'strings');
+    }
 
-    Array(NUMBER_OF_STRINGS).fill(0).forEach((_, i) => {
-      const x = 100 / (NUMBER_OF_FRETS + 1) + '%';
-      const y = 100 * i / (NUMBER_OF_STRINGS - 1) + '%';
-      $strings.append('line')
+    Array(this.numberOfStrings).fill(0).forEach((_, i) => {
+      const x = 99 / (this.numberOfFrets + 1) + '%';
+      const y = 100 * i / (this.numberOfStrings - 1) + '%';
+      this.$strings.append('line')
         .attr('class', `string string-${i + 1}`)
         .attr('stroke-width', 1)
         .attr('stroke', 'black')
